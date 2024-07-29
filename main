@@ -1,0 +1,129 @@
+from tkinter import *
+from tkinter import messagebox
+import random
+import pyperclip
+import json
+
+
+# ---------------------------- PASSWORD GENERATOR ------------------------------- #
+
+
+def generate_password():
+    letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    numbers = '0123456789'
+    symbols = '!#$%&()*+'
+
+    nr_letters = random.randint(8, 10)
+    nr_symbols = random.randint(2, 4)
+    nr_numbers = random.randint(2, 4)
+
+    password_letters = [random.choice(letters) for _ in range(nr_letters)]
+    password_numbers = [random.choice(numbers) for _ in range(nr_numbers)]
+    password_symbols = [random.choice(symbols) for _ in range(nr_symbols)]
+
+    password_list = password_letters + password_numbers + password_symbols
+    random.shuffle(password_list)
+    password = "".join(password_list)
+    pyperclip.copy(password)
+    password_entry.delete(0, END)
+    password_entry.insert(0, password)
+    generate_password_button.config(state=DISABLED)
+
+
+# ---------------------------- SAVE PASSWORD ------------------------------- #
+
+def search():
+    website = website_entry.get()
+    if not website:
+        messagebox.showinfo(title="Error", message="Please enter a website.")
+        return
+    try:
+        with open("login_details.json") as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+        messagebox.showinfo(title="Error", message="The data file does not exist.")
+    else:
+        if website in data:
+            email = data[website]["email"]
+            password = data[website]["password"]
+            choice = messagebox.askokcancel(title="Login Details", message=f"Email: {email}\nPassword: {password}\n"
+                                                                           f"press OK to copy ")
+            if choice:
+                pyperclip.copy(password)
+        else:
+            messagebox.showinfo(title="Not Found", message="No details found for this website.")
+
+
+def save():
+    website = website_entry.get()
+    email = email_entry.get()
+    passwords = password_entry.get()
+    new_data = {website: {
+        "email": email,
+        "password": passwords
+    }}
+
+    if len(website) == 0 or len(passwords) == 0 or len(email) == 0:
+        messagebox.showerror(message="Please don't leave any fields empty!")
+    else:
+        try:
+            with open("login_details.json", "r") as data_file:
+                data = json.load(data_file)
+        except FileNotFoundError:
+            data = {}
+        data.update(new_data)
+        with open("login_details.json", "w") as data_file:
+            json.dump(data, data_file, indent=4)
+
+        website_entry.delete(0, END)
+        password_entry.delete(0, END)
+        generate_password_button.config(state=NORMAL)
+
+# ---------------------------- UI SETUP ------------------------------- #
+
+
+window = Tk()
+window.title("Password Manager")
+window.config(padx=50, pady=50)
+
+canvas = Canvas(width=200, height=200)
+logo = PhotoImage(file="logo.png")
+canvas.create_image(100, 100, image=logo)
+canvas.grid(column=1, row=0)
+
+# Labels
+website_label = Label(text="Website:")
+website_label.grid(column=0, row=1)
+
+email_user_label = Label(text="Email/Username:")
+email_user_label.grid(column=0, row=2)
+
+password_label = Label(text="Password:")
+password_label.grid(column=0, row=3)
+
+# Entries
+website_entry = Entry(width=21)
+website_entry.focus()
+website_entry.grid(column=1, row=1)
+
+email_entry = Entry(width=39)
+email_entry.grid(column=1, row=2, columnspan=2)
+email_entry.insert(0, "anuragbaiju03@gmail.com")
+
+password_entry = Entry(width=21)
+password_entry.grid(column=1, row=3)
+
+# Buttons
+search_button = Button(text="Search", width=14, command=search)
+search_button.grid(column=2, row=1)
+
+generate_password_button = Button(text="Generate Password", width=14, command=generate_password)
+generate_password_button.grid(column=2, row=3)
+
+add_button = Button(text="Add", width=36, command=save)
+add_button.grid(column=1, row=4, columnspan=2)
+
+window.mainloop()
+
+
+
